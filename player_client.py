@@ -1,12 +1,15 @@
 from socket import socket, AF_INET, SOCK_DGRAM
 from datetime import datetime
 from player import Player
-from exceptions import PlayerCapacityReachedMaximum
+from exceptions import PlayerCapacityReachedMaximum, GameOver
 
 
 class PlayerClient:
     BUFFER_SIZE = 1024
     ALLOWED = 'ALLOWED'
+    INFO = 'INFO'
+    WARNING = 'WARN'
+    END_GAME = 'OVER'
 
     def __init__(self, address, port):
         self.address = address
@@ -43,10 +46,10 @@ class PlayerClient:
             self.show_message('Jogador aceito!... ')
             self.player.set_identifier(game_response[1])
             self.handle_name_choice()
+            self.show_message('Aguardando o início do jogo...\nVocê pode pressionar ctrl + '
+                              'break a qualquer momento para sair do jogo ')
         else:
             raise PlayerCapacityReachedMaximum
-
-        print(game_response)
 
     def play(self):
         """ Send requests to the game server """
@@ -57,11 +60,8 @@ class PlayerClient:
                     if self.player.get_identifier() is None:
                         self.request_join_game()
                     else:
-                        self.show_message('Aguardando o início do jogo...\nVocê pode pressionar ctrl + '
-                                          'break a qualquer momento para sair do jogo ')
-
                         response, server_address = self.player_socket.recvfrom(self.BUFFER_SIZE)
-                        self.show_message(f'Server said: {response.decode("ASCII")}')
+                        self.handle_server_response(response.decode("ASCII"))
 
                 except OSError as error:
                     break
@@ -72,6 +72,10 @@ class PlayerClient:
 
         except PlayerCapacityReachedMaximum:
             self.show_message('O jogo atingiu a capacidade máxima! Desculpa')
+
+        except GameOver:
+            self.show_message(f'Obrigado por jogar {self.player.name}!!'
+                              f'Sua pontuação foi de {self.player.score}')
         finally:
             self.end_game()
 
@@ -91,6 +95,20 @@ class PlayerClient:
                 self.player.name = name
                 self.show_message(f'Seu nome foi definido como: {self.player.name}')
                 break
+
+    def handle_server_response(self, response):
+        server_messages = response.split('\t')
+        goal = server_messages[0]
+
+        if goal == self.INFO:
+            for i in range(1, len(server_messages)):
+                self.show_message(server_messages[i])
+
+        elif goal == self.WARNING:
+            self.show_message(server_messages[1])
+
+        elif goal == self.END_GAME:
+            raise GameOver
 
 
 def main():
