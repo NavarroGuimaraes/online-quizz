@@ -1,15 +1,35 @@
-import socket
+from socket import socket, AF_INET, SOCK_DGRAM
+from datetime import datetime
 
-# Server properties
-server_ip = "127.0.0.1"
-server_port = 616
-server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-server_socket.bind((server_ip, server_port))
 
-# CONSTANTS
-BUFFER_SIZE = 1024
-WELCOME_MESSAGE = "Welcome to the best \"quizz\" ever! Oh sorry, I saw the list upside down :("
-MAX_NUM_OF_PLAYERS = 6
+class Server:
+    # CONSTANTS
+    BUFFER_SIZE = 1024
 
-# Game Variables
-player_list = []
+    def __init__(self, address='localhost', port=4051):
+
+        # Server properties
+        self.address = address
+        self.port = port
+        self.server_socket = None
+
+    def show_message(self, msg):
+
+        """ Prints the given message with the current time """
+        current_date_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print(f'[{current_date_time}] {msg}')
+
+    def configure_server(self):
+
+        """ Configure the server """
+        self.show_message('Creating socket and configuring server...')
+        self.server_socket = socket(family=AF_INET, type=SOCK_DGRAM)
+        self.server_socket.bind((self.address, self.port))
+        self.show_message(f'Server binded to {self.address}:{self.port}')
+
+    def shutdown_server(self):
+
+        """ Shutdown the server """
+        self.show_message("Shutting down the server...")
+        self.server_socket.close()
+        self.show_message("Goodbye...")
