@@ -10,3 +10,8 @@ class PlayerCapacityReachedMaximum(Error):
 class GameOver(Error):
     """ Raised when the game is over """
     pass
+
+
+class TimesUp(Error):
+    """ Raised when the user did not gave the answer in time """
+    pass

@@ -1,7 +1,7 @@
 Qual a resposta para a vida, o universo e tudo mais (digite os números)?	42
-Qual a ciência que estuda a atmosfera da Terra e a climatologia?	METEOROLOGIA
-Qual o time considerado o terror do nordeste?	SANTA CRUZ
-Numa casa toda vermelha, de que cor é a parede da sala?	VERMELHA
+Qual a ciência que estuda a atmosfera da Terra e a climatologia?	Meteorologia
+Qual o time considerado o terror do nordeste?	Santa Cruz
+Numa casa toda vermelha, de que cor é a parede da sala?	Vermelha
 Qual o código da melhor cadeira da UFPE?	IF975
 O que é um maço de maconha enrolado num papel?	Baseado em fatos reais
 Quantos fusos horários existem na Rússia (digite os números)?	11
