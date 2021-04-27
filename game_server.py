@@ -28,7 +28,7 @@ class GameServer(server.Server):
         self.max_num_of_players = max_num_of_players
         self.session_lock = threading.Lock()  # Isso garante que executaremos as funções uma em cada thread
 
-        self.max_wait_time = 300  # in seconds
+        self.max_wait_time = 20  # in seconds
         self.timer_started_at = None
         self.timer = None
         self.is_game_started = False
@@ -39,6 +39,7 @@ class GameServer(server.Server):
         self.is_game_over = False
         self.timeout_already_covered = False
         self.was_scoreboard_shown = False
+        self.all_answered = True
 
         with open('questions.txt', 'r', encoding='UTF-8') as file:
             for row in file:
@@ -50,8 +51,6 @@ class GameServer(server.Server):
     def add_player_to_list(self, player_identifier, player_address):
         self.players_list[player_identifier] = player_address
         self.players_score[player_identifier] = 0
-        self.players_score[player_identifier] += 5
-        print(self.players_score[player_identifier])
 
     def get_remaining_time_to_begin(self):
         return int(self.max_wait_time - (time() - self.timer_started_at))
@@ -106,8 +105,8 @@ class GameServer(server.Server):
 
     def check_if_all_answered(self):
         if len(self.players_who_answered) >= len(self.players_list):
-            sleep(3)
-            self.do_play()
+            sleep(1)
+            self.all_answered = True
 
     def can_game_start(self):
         if len(self.players_list) == self.max_num_of_players:
@@ -122,15 +121,17 @@ class GameServer(server.Server):
         self.is_game_over = True
 
     def ask_and_wait_or_timeout(self):
+        self.players_who_answered = []
         self.send_message_to_all_players(self.QUESTION+"\t"+self.current_question)
         sleep(4)
         self.send_message_to_all_players(self.REQUEST_ANSWER)
-        try:
-            data, player_address = self.server_socket.recvfrom(self.BUFFER_SIZE)
-            self.handle_player_request(data, player_address)
-        except OSError:
-            self.timeout_quest_time()
-            pass
+        while not self.all_answered:
+            try:
+                data, player_address = self.server_socket.recvfrom(self.BUFFER_SIZE)
+                self.handle_player_request(data, player_address)
+            except OSError:
+                self.timeout_quest_time()
+                pass
 
     def timeout_quest_time(self):
         with self.session_lock:
@@ -142,7 +143,7 @@ class GameServer(server.Server):
                     self.players_score[player] -= 1
                     self.send_message_to_player(player, f"A resposta correta seria: {self.current_answer}")
                 self.timeout_already_covered = True
-                self.do_play()
+                self.all_answered = True
 
     def start(self):
         self.is_game_started = True
@@ -156,17 +157,20 @@ class GameServer(server.Server):
                 self.show_scoreboard()
                 self.send_message_to_all_players("END\tPartida finalizada!")
                 self.shutdown_server()
+                break
             else:
                 try:
                     if self.qt_questions_made < 5:
-                        self.send_message_to_all_players(f"INFO\tVamos para a {self.qt_questions_made + 1}ª pergunta!")
-                        sleep(3)
-                        index = randint(0, len(self.QUESTIONS)-1)
-                        self.current_question = self.QUESTIONS.pop(index)
-                        self.current_answer = self.ANSWERS.pop(index)
-                        self.timeout_already_covered = False
-                        self.qt_questions_made += 1
-                        self.ask_and_wait_or_timeout()
+                        if self.all_answered:
+                            self.send_message_to_all_players(f"INFO\tVamos para a {self.qt_questions_made + 1}ª pergunta!")
+                            sleep(3)
+                            index = randint(0, len(self.QUESTIONS)-1)
+                            self.current_question = self.QUESTIONS.pop(index)
+                            self.current_answer = self.ANSWERS.pop(index)
+                            self.timeout_already_covered = False
+                            self.qt_questions_made += 1
+                            self.all_answered = False
+                            self.ask_and_wait_or_timeout()
                     else:
                         self.finish_game()
                 except OSError:
@@ -211,11 +215,10 @@ class GameServer(server.Server):
     def show_scoreboard(self):
         with self.session_lock:
             if not self.was_scoreboard_shown:
-                ordered_players = dict(sorted(self.players_score.items(), key=lambda item: item[1]))
+                ordered_players = dict(sorted(self.players_score.items(), key=lambda item: item[1], reverse=True))
                 text = ""
                 for position, key in enumerate(ordered_players):
-                    if text != "":
-                        text += "\n"
+                    text += "\n"
                     text += f"{position+1}º colocado - {key} - {ordered_players[key]} pontos"
 
                 self.send_message_to_all_players("INFO\t"+text)
