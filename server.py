@@ -25,6 +25,7 @@ class Server:
         self.show_message('Creating socket and configuring server...')
         self.server_socket = socket(family=AF_INET, type=SOCK_DGRAM)
         self.server_socket.bind((self.address, self.port))
+        self.server_socket.settimeout(10.0)
         self.show_message(f'Server binded to {self.address}:{self.port}')
 
     def shutdown_server(self):

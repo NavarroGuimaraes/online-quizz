@@ -1,4 +1,3 @@
-import threading
 from socket import socket, AF_INET, SOCK_DGRAM
 from datetime import datetime
 from player import Player
@@ -11,8 +10,9 @@ class PlayerClient:
     ALLOWED = 'ALLOWED'
     INFO = 'INFO'
     WARNING = 'WARN'
-    END_GAME = 'OVER'
+    END_GAME = 'END'
     QUESTION = 'QST'
+    REQUESTED_ANSWER = 'RAN'
     ANSWER = 'ANS'
     ENCODING = 'UTF-8'
     ANSWER_IS_CORRECT = "RGT"
@@ -24,6 +24,7 @@ class PlayerClient:
         self.port = port
         self.player_socket = None
         self.player = Player()
+        self.is_playing = True
 
     def show_message(self, message):
         current_date_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -69,7 +70,7 @@ class PlayerClient:
         if self.player.get_identifier() is None:
             self.request_join_game()
         try:
-            while True:
+            while self.is_playing:
                 try:
                     response, server_address = self.player_socket.recvfrom(self.BUFFER_SIZE)
                     self.handle_server_response(response.decode(self.ENCODING))
@@ -84,9 +85,6 @@ class PlayerClient:
         except PlayerCapacityReachedMaximum:
             self.show_message('O jogo atingiu a capacidade máxima! Desculpa')
 
-        except GameOver:
-            self.show_message(f'Obrigado por jogar {self.player.name}!!'
-                              f'Sua pontuação foi de {self.player.score}')
         finally:
             self.end_game()
 
@@ -99,7 +97,7 @@ class PlayerClient:
                 name = input("Então vamos escolher um novo nome!\nNome:")
                 tries += 1
             else:
-                if tries > 3:
+                if tries > 2:
                     print('Tá querendo me tirar irmão?')
                     name = 'Bumbum guloso'
 
@@ -117,16 +115,29 @@ class PlayerClient:
         elif goal == self.QUESTION:
             self.handle_question(server_messages[1])
 
+        elif goal == self.REQUESTED_ANSWER:
+            self.request_player_answer()
+
         elif goal == self.ANSWER_IS_CORRECT:
             self.handle_correct_answer(server_messages[1])
 
         elif goal == self.ANSWER_IS_WRONG:
             self.handle_wrong_answer(server_messages[1])
+
         elif goal == self.END_GAME:
-            raise GameOver
+            self.handle_end_game()
 
     def handle_question(self, question):
+        self.show_message("Leia e aguarde a solicitação da resposta")
         self.show_message(question)
+
+    def handle_end_game(self):
+        self.is_playing = False
+        self.show_message(f'Obrigado por jogar {self.player.name}!!\n'
+                          f'Seu ID é: {self.player.identifier}\n'
+                          f'Sua pontuação foi de {self.player.score}\n')
+
+    def request_player_answer(self):
         try:
             answer = self.read_answer()
             if isinstance(answer, TimeoutError):
