@@ -145,7 +145,8 @@ class PlayerClient:
             else:
                 self.send_message_to_server(self.build_answer(answer))
         except Exception as e:
-            self.show_message("Ops, houve um erro!")
+            self.show_message("\nDemorou demais irmão!")
+            self.player.score -= 1
 
     @timeout(10)
     def read_answer(self):

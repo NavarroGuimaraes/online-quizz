@@ -28,7 +28,7 @@ class GameServer(server.Server):
         self.max_num_of_players = max_num_of_players
         self.session_lock = threading.Lock()  # Isso garante que executaremos as funções uma em cada thread
 
-        self.max_wait_time = 20  # in seconds
+        self.max_wait_time = 30  # in seconds
         self.timer_started_at = None
         self.timer = None
         self.is_game_started = False
