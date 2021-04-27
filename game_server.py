@@ -18,7 +18,7 @@ class GameServer(server.Server):
     REQUEST_ANSWER = 'RAN'
     players_score = {}
     players_who_answered = []
-    QUEST_TIME = 15
+    QUEST_TIME = 10
     ANSWER_IS_CORRECT = "RGT"
     ANSWER_IS_WRONG = "WRG"
 
@@ -28,7 +28,7 @@ class GameServer(server.Server):
         self.max_num_of_players = max_num_of_players
         self.session_lock = threading.Lock()  # Isso garante que executaremos as funções uma em cada thread
 
-        self.max_wait_time = 10  # in seconds
+        self.max_wait_time = 300  # in seconds
         self.timer_started_at = None
         self.timer = None
         self.is_game_started = False
@@ -246,7 +246,7 @@ class GameServer(server.Server):
 
 def main():
     """ Create game server """
-    game_server = GameServer('localhost', 4051, 2)
+    game_server = GameServer('localhost', 4051, 5)
     game_server.configure_server()
     game_server.wait_for_players_and_start()
     # Game is started automatically
